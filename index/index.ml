@@ -1,4 +1,4 @@
-let index_file register filename =
+let index_odocl_file register filename =
   match Fpath.of_string filename with
   | Error (`Msg msg) -> Format.printf "FILE ERROR %s: %s@." filename msg
   | Ok file ->
@@ -11,9 +11,28 @@ let index_file register filename =
       let id = u.Lang.Compilation_unit.id in
       Fold.unit ~f:(register (id :> Paths.Identifier.t)) () u
     in
-    (match Odoc_odoc.Indexing.handle_file ~page ~unit file with
+    let occ _o = () in
+    (match Odoc_odoc.Indexing.handle_file ~page ~unit ~occ file with
      | Ok result -> result
      | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
+
+let index_odoc_index_file register filename =
+  match Fpath.of_string filename with
+  | Error (`Msg msg) -> Format.printf "FILE ERROR %s: %s@." filename msg
+  | Ok file ->
+    (match Odoc_odoc.Odoc_file.load_index file with
+     | Ok entries -> Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries
+     | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
+
+let check_file_extension file =
+  if not (Fpath.has_ext "odocl" file || Fpath.has_ext "odoc-index" file)
+  then
+    Format.eprintf
+      "ERROR: %a is not a .odocl file, nor a .odoc-index file.@."
+      Fpath.pp
+      file
+
+let check_files_extension files = List.iter check_file_extension files
 
 let main
   files
@@ -39,7 +58,7 @@ let main
          ~favourite
          ~favoured_prefixes
          ~pkg)
-      (Odoc_search.Entry.entries_of_item id item)
+      (Odoc_search.Entry.entries_of_item item)
   in
   let files =
     match file_list with
@@ -55,12 +74,22 @@ let main
       close_in h ;
       files @ other_files
   in
+  let files = List.map Fpath.v files in
+  let favourite_files = List.map Fpath.v favourite_files in
+  let odocl_files = List.filter (Fpath.has_ext "odocl") files in
+  let odoc_index_files = List.filter (Fpath.has_ext "odoc-index") files in
+  let favourite_odocl_files = List.filter (Fpath.has_ext "odocl") favourite_files in
+  let favourite_odoc_index_files =
+    List.filter (Fpath.has_ext "odoc-index") favourite_files
+  in
+  check_files_extension files ;
   let h = Storage.open_out db_filename in
   let flush () =
     let t = Db_writer.export ~summarize:(db_format = `ancient) db in
     Storage.save ~db:h t
   in
-  let loop ~favourite odoc =
+  let loop kind ~favourite file =
+    let odoc = Fpath.to_string file in
     let pkg, odoc =
       match String.split_on_char '\t' odoc with
       | [ filename ] -> no_pkg, filename
@@ -68,11 +97,27 @@ let main
       | [ name; version; filename ] -> Db.Entry.Package.v ~name ~version, filename
       | _ -> failwith ("invalid line: " ^ odoc)
     in
-    index_file (register ~pkg ~favourite) odoc ;
+    (match kind with
+     | `odocl -> index_odocl_file (register ~pkg ~favourite) odoc
+     | `odoc_index ->
+       index_odoc_index_file
+         (fun _id entry ->
+           Load_doc.register_entry
+             ~db
+             ~index_docstring
+             ~index_name
+             ~type_search
+             ~favourite
+             ~favoured_prefixes
+             ~pkg
+             entry)
+         odoc) ;
     if db_format = `ancient && Db_writer.load db > 1_000_000 then flush ()
   in
-  List.iter (loop ~favourite:false) files ;
-  List.iter (loop ~favourite:true) favourite_files ;
+  List.iter (loop `odocl ~favourite:false) odocl_files ;
+  List.iter (loop `odocl ~favourite:true) favourite_odocl_files ;
+  List.iter (loop `odoc_index ~favourite:false) odoc_index_files ;
+  List.iter (loop `odoc_index ~favourite:true) favourite_odoc_index_files ;
   flush () ;
   Storage.close_out h
 
@@ -109,7 +154,7 @@ let odoc_favourite_file =
   Arg.(value & opt_all file [] & info [ "favoured" ] ~doc)
 
 let odoc_files =
-  let doc = "Path to a .odocl file" in
+  let doc = "Path to a .odocl file or a .odoc-index file" in
   Arg.(value & (pos_all file [] @@ info ~doc ~docv:"ODOCL_FILE" []))
 
 let term =
