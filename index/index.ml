@@ -80,7 +80,7 @@ let main
     let file = Fpath.v odoc in
     (match Fpath.(get_ext file) with
      | ".odocl" -> index_odocl_file (register ~pkg ~favourite) odoc
-     | ".odoc_index" ->
+     | ".odoc-index" ->
        index_odoc_index_file
          (fun _id entry ->
            Load_doc.register_entry
