@@ -1,2 +1,2 @@
 (library
- (name db))
+ (name db) (libraries fmt))

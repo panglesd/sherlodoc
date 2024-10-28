@@ -3,15 +3,9 @@ let index_odocl_file register filename =
   | Error (`Msg msg) -> Format.printf "FILE ERROR %s: %s@." filename msg
   | Ok file ->
     let open Odoc_model in
-    let page p =
-      let id = p.Lang.Page.name in
-      Fold.page ~f:(register (id :> Paths.Identifier.t)) () p
-    in
-    let unit u =
-      let id = u.Lang.Compilation_unit.id in
-      Fold.unit ~f:(register (id :> Paths.Identifier.t)) () u
-    in
-    let occ _o = () in
+    let page p = register [ Odoc_index.Skeleton.from_page p ] in
+    let unit u = register [ Odoc_index.Skeleton.from_unit u ] in
+    let occ _o = register [] in
     (match Odoc_odoc.Indexing.handle_file ~page ~unit ~occ file with
      | Ok result -> result
      | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
@@ -21,8 +15,9 @@ let index_odoc_index_file register filename =
   | Error (`Msg msg) -> Format.printf "FILE ERROR %s: %s@." filename msg
   | Ok file ->
     (match Odoc_odoc.Odoc_file.load_index file with
-     | Ok (_sidebar, entries) ->
-       Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries
+     | Ok { (* pages; libs; *) extra } ->
+       Odoc_utils.Tree.iter_f register extra
+       (* Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries *)
      | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
 
 let main
@@ -39,8 +34,8 @@ let main
   let module Storage = (val Db_store.storage_module db_format) in
   let db = Db_writer.make () in
   let no_pkg = Db.Entry.Package.v ~name:"" ~version:"" in
-  let register ~pkg ~favourite id () item =
-    List.iter
+  let register ~pkg ~favourite forest =
+    Odoc_utils.Tree.iter_f
       (Load_doc.register_entry
          ~db
          ~index_docstring
@@ -49,7 +44,7 @@ let main
          ~favourite
          ~favoured_prefixes
          ~pkg)
-      (Odoc_search.Entry.entries_of_item item)
+      forest
   in
   let files =
     match file_list with
@@ -83,7 +78,7 @@ let main
      | ".odocl" -> index_odocl_file (register ~pkg ~favourite) odoc
      | ".odoc-index" ->
        index_odoc_index_file
-         (fun _id entry ->
+         (fun (* _id *) entry ->
            Load_doc.register_entry
              ~db
              ~index_docstring
