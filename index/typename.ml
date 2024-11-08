@@ -19,13 +19,18 @@ and show_signature h sig_ =
   | `ModuleType (_, p) ->
     Format.fprintf h "%s" (Odoc_model.Names.ModuleTypeName.to_string p)
 
-let show_type_name_verbose h : Path.Type.t -> _ = function
+let rec show_type_name_verbose h : Path.Type.t -> _ = function
   | `Resolved t ->
     Format.fprintf h "%a" show_ident_long Path.Resolved.(identifier (t :> t))
   | `Identifier (path, _hidden) ->
     let name = String.concat "." @@ Identifier.fullname path in
     Format.fprintf h "%s" name
-  | `Dot (mdl, x) ->
-    Format.fprintf h "%s.%s" (Odoc_document.Url.render_path (mdl :> Path.t)) x
+  | `DotT (mdl, x) ->
+    Format.fprintf
+      h
+      "%s.%s"
+      (Odoc_document.Url.render_path (mdl :> Path.t))
+      (TypeName.to_string x)
+  | `SubstitutedT x -> show_type_name_verbose h x
 
 let to_string t = Format.asprintf "%a" show_type_name_verbose t

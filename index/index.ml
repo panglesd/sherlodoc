@@ -5,11 +5,11 @@ let index_odocl_file register filename =
     let open Odoc_model in
     let page p =
       let id = p.Lang.Page.name in
-      Fold.page ~f:(register (id :> Paths.Identifier.t)) () p
+      Odoc_index.Fold.page ~f:(register (id :> Paths.Identifier.t)) () p
     in
     let unit u =
       let id = u.Lang.Compilation_unit.id in
-      Fold.unit ~f:(register (id :> Paths.Identifier.t)) () u
+      Odoc_index.Fold.unit ~f:(register (id :> Paths.Identifier.t)) () u
     in
     let occ _o = () in
     (match Odoc_odoc.Indexing.handle_file ~page ~unit ~occ file with
@@ -21,8 +21,7 @@ let index_odoc_index_file register filename =
   | Error (`Msg msg) -> Format.printf "FILE ERROR %s: %s@." filename msg
   | Ok file ->
     (match Odoc_odoc.Odoc_file.load_index file with
-     | Ok (_sidebar, entries) ->
-       Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries
+     | Ok entries -> Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries.index
      | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
 
 let main
@@ -49,7 +48,7 @@ let main
          ~favourite
          ~favoured_prefixes
          ~pkg)
-      (Odoc_search.Entry.entries_of_item item)
+      (Odoc_index.Entry.entries_of_item item)
   in
   let files =
     match file_list with

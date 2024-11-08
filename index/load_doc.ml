@@ -99,7 +99,7 @@ let searchable_type_of_constructor args res =
 let searchable_type_of_record parent_type type_ =
   Odoc_model.Lang.TypeExpr.Arrow (None, parent_type, type_)
 
-let convert_kind ~db (Odoc_search.Entry.{ kind; _ } as entry) =
+let convert_kind ~db (Odoc_index.Entry.{ kind; _ } as entry) =
   match kind with
   | TypeDecl _ -> Entry.Kind.Type_decl (Odoc_search.Html.typedecl_params_of_entry entry)
   | Value { value = _; type_ } ->
@@ -150,11 +150,11 @@ let rec categorize id =
     | `ExtensionDecl _ | `Module _ ) as x ->
     let parent = Identifier.label_parent { id with iv = x } in
     categorize (parent :> Identifier.Any.t)
-  | `AssetFile _ | `SourceDir _ | `SourceLocationMod _ | `SourceLocation _ | `SourcePage _
+  | `AssetFile _ | `SourceLocationMod _ | `SourceLocation _ | `SourcePage _
   | `SourceLocationInternal _ ->
     `ignore (* unclear what to do with those *)
 
-let categorize Odoc_search.Entry.{ id; _ } =
+let categorize Odoc_index.Entry.{ id; _ } =
   match id.iv with
   | `ModuleType (parent, _) ->
     (* A module type itself is not *from* a module type, but it might be if one
@@ -171,7 +171,7 @@ let register_entry
   ~favoured_prefixes
   ~pkg
   ~cat
-  (Odoc_search.Entry.{ id; doc; kind } as entry)
+  (Odoc_index.Entry.{ id; doc; kind } as entry)
   =
   let module Sherlodoc_entry = Entry in
   let open Odoc_search in
@@ -199,7 +199,7 @@ let register_entry
   ~favourite
   ~favoured_prefixes
   ~pkg
-  (Odoc_search.Entry.{ id; kind; _ } as entry)
+  (Odoc_index.Entry.{ id; kind; _ } as entry)
   =
   let cat = categorize entry in
   let is_pure_documentation =
