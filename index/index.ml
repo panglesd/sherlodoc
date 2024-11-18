@@ -16,7 +16,7 @@ let index_odoc_index_file register filename =
   | Ok file ->
     (match Odoc_odoc.Odoc_file.load_index file with
      | Ok { (* pages; libs; *) extra } ->
-       Odoc_utils.Tree.iter_f register extra
+       List.iter (Odoc_utils.Tree.iter ~f:register) extra
        (* Odoc_model.Paths.Identifier.Hashtbl.Any.iter register entries *)
      | Error (`Msg msg) -> Format.printf "Odoc warning or error %s: %s@." filename msg)
 
@@ -35,8 +35,8 @@ let main
   let db = Db_writer.make () in
   let no_pkg = Db.Entry.Package.v ~name:"" ~version:"" in
   let register ~pkg ~favourite forest =
-    Odoc_utils.Tree.iter_f
-      (Load_doc.register_entry
+    Odoc_utils.Tree.iter
+      ~f:(Load_doc.register_entry
          ~db
          ~index_docstring
          ~index_name
@@ -75,7 +75,7 @@ let main
     in
     let file = Fpath.v odoc in
     (match Fpath.(get_ext file) with
-     | ".odocl" -> index_odocl_file (register ~pkg ~favourite) odoc
+     | ".odocl" -> index_odocl_file (List.iter (register ~pkg ~favourite)) odoc
      | ".odoc-index" ->
        index_odoc_index_file
          (fun (* _id *) entry ->
