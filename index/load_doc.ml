@@ -122,12 +122,16 @@ let convert_kind ~db (Odoc_index.Entry.{ kind; _ } as entry) =
     let typ = Db_writer.type_of_odoc ~db typ in
     Entry.Kind.Field typ
   | Doc (* _ *) -> Doc
+  | Dir -> Doc
+  | Page _ -> Doc
   | Class_type _ -> Class_type
   | Method _ -> Method
   | Class _ -> Class
   | TypeExtension _ -> Type_extension
   | Module _ -> Entry.Kind.Module
   | ModuleType _ -> Module_type
+  | Impl -> Doc
+  
 
 let register_type_expr ~db elt typ =
   let type_polarities = Db.Type_polarity.of_typ ~any_is_poly:true typ in
