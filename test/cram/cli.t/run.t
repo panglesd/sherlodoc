@@ -3,7 +3,7 @@
   $ odoc compile -I . page.mld
   $ odoc link -I . main.odoc
   $ odoc link -I . page-page.odoc
-  $ odoc compile-index -o index.odoc-index --root ./
+  $ odoc compile-index -o index.odoc-index main.odocl page-page.odocl
   $ export SHERLODOC_DB=db.bin
   $ export SHERLODOC_FORMAT=marshal
   $ sherlodoc index index.odoc-index
@@ -53,7 +53,6 @@
   val Main.produce_2' : unit -> unit -> moo
   val Main.value : moo
   $ sherlodoc search ":moo -> _"
-  cons Main.MyExtension : moo -> extensible_type
   val Main.consume : moo -> unit
   val Main.consume_2 : moo -> moo -> unit
   val Main.consume_2_other : moo -> t -> unit
@@ -70,7 +69,6 @@
   mod Main.List
   mod Main.Nest
   type 'a Main.list
-  cons Main.MyExtension : moo -> extensible_type
   val Main.consume : moo -> unit
   val Main.Map.to_list : foo
   val Main.nesting_priority : foo
@@ -108,15 +106,13 @@
   $ sherlodoc search ": 'a bo"
   val Main.poly_param : 'a boo
   $ sherlodoc search ":extensible_type"
-  cons Main.MyExtension : moo -> extensible_type
+  [No results]
   $ sherlodoc search ":exn"
   exn Main.Explicit_exn : exn_payload -> exn
   exn Main.Implicit_exn : exn_payload -> exn
-  cons Main.Very_explicit_exn : exn_payload -> exn
   $ sherlodoc search ": exn_payload -> _"
   exn Main.Explicit_exn : exn_payload -> exn
   exn Main.Implicit_exn : exn_payload -> exn
-  cons Main.Very_explicit_exn : exn_payload -> exn
   $ sherlodoc search ": long_name_type"
   val Main.long_name_value : long_name_type
   $ sherlodoc search ": long_nam"
