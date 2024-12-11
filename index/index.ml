@@ -3,7 +3,7 @@ let handle_file register file =
   let open Odoc_odoc in
   let open Odoc_index in
   match Fpath.get_ext file with
-  | ".odoc-index" -> Odoc_file.load_index file >>= fun index -> Ok (register index)
+  | ".odoc-index" -> Odoc_file.load_index file >>= fun index -> Ok (register index.extra)
   | ".odocl" ->
     Odoc_file.load file
     >>= fun unit' ->

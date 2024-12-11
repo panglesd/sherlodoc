@@ -122,15 +122,12 @@ let convert_kind ~db (Odoc_index.Entry.{ kind; _ } as entry) =
     let typ = Db_writer.type_of_odoc ~db typ in
     Entry.Kind.Field typ
   | Doc -> Doc
-  | Dir -> Doc
-  | Page _ -> Doc
   | Class_type _ -> Class_type
   | Method _ -> Method
   | Class _ -> Class
   | TypeExtension _ -> Type_extension
   | Module _ -> Entry.Kind.Module
   | ModuleType _ -> Module_type
-  | Impl -> Doc
 
 let register_type_expr ~db elt typ =
   let type_polarities = Db.Type_polarity.of_typ ~any_is_poly:true typ in
@@ -207,7 +204,7 @@ let register_entry
   let cat = categorize entry in
   let is_pure_documentation =
     match kind with
-    | Doc | Page _ | Dir | Impl -> true
+    | Doc -> true
     | _ -> false
   in
   if is_pure_documentation || cat = `ignore || Odoc_model.Paths.Identifier.is_hidden id
